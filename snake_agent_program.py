@@ -60,10 +60,20 @@ def snake_agent_program(percepts, actuators):
     obst_pos = percepts['obstacles-sensor']
     
     
-    #while True:
-    for dir in DIRECTIONS:
-        if next_tile(env_map, dir, body_pos, food_pos, obst_pos) != 'wall':
-            actions.append('move-%s' %dir)
+    while True:
+        new_dir = random.choice(DIRECTIONS)
+        if next_tile(env_map, new_dir, body_pos, food_pos, obst_pos) != 'wall':
+            actions.append('move-%s' %new_dir)
             break
+        else:
+            print('WALL')
+    
+    """
+    for dir in DIRECTIONS:
+        if next_tile(env_map, dir, body_pos, food_pos, obst_pos) == 'wall':
+            
+            break
+    actions.append('move-%s' %dir)
+    """
     
     return actions
