@@ -1,53 +1,76 @@
+""" 
+University of New England (UNE)
+T2 2023 - COSC550 Artificial Intelligence - Practical Assignment 1
+Kieran Hillier - Student ID: 220281036
+"""
+
 from une_ai.models import Agent
 
 class SnakeAgent(Agent):
+    
+    DIRECTIONS = ['up', 'left', 'down', 'right']
 
-    # DO NOT CHANGE THE PARAMETERS OF THIS METHOD
     def __init__(self, agent_program):
-        # DO NOT CHANGE THE FOLLOWING LINES OF CODE
         super().__init__("Snake Agent", agent_program)
 
-        """
-        If you need to add more instructions
-        in the constructor, you can add them here
-        """
-
-    """
-    TODO:
-    In order for the agent to gain access to all 
-    the sensors specified in the assignment's 
-    requirements, it is essential to implement 
-    this method.
-    You can add a single sensor with the method:
-    self.add_sensor(sensor_name, initial_value, validation_function)
-    """
     def add_all_sensors(self):
-        pass
+        """Add sensors for the agent to perceive the environment."""
+        # list of x,y int tuples coordinates for each body segment. 
+        # Head is first, Tail is last.
+        self.add_sensor('body-sensor', [(0,0)], lambda v: 
+                        isinstance(v,tuple) and 
+                        len(v) > 0 and 
+                        isinstance(v[0],int) and 
+                        isinstance(v[1],int))
+        
+        # list of x,y,score int tuples coordinates and score for each food.
+        self.add_sensor('food-sensor', [(0,0,0)], lambda v: 
+                        isinstance(v,tuple) and 
+                        len(v) > 0 and 
+                        isinstance(v[0],int) and 
+                        isinstance(v[1],int) and 
+                        isinstance(v[2],int))
+        
+        # list of x,y int tuples coordinates for each obstacle.
+        self.add_sensor('obstacles-sensor', [(0,0)], lambda v: 
+                        isinstance(v,tuple) and 
+                        len(v) > 0 and 
+                        isinstance(v[0],int) and 
+                        isinstance(v[1],int))
+        
+        # Seconds remaining before the Game-Over state.
+        self.add_sensor('clock', 0, lambda v: 
+                        isinstance(v,int) and 
+                        v >= 0)
 
-    """
-    TODO:
-    In order for the agent to gain access to all 
-    the actuators specified in the assignment's 
-    requirements, it is essential to implement 
-    this method.
-    You can add a single actuator with the method:
-    self.add_actuator(actuator_name, initial_value, validation_function)
-    """
     def add_all_actuators(self):
-        pass
+        """Add actuators for the agent to interact with the environment."""
+        # Current direction the snake is facing and will travel
+        self.add_actuator('head', 'up', lambda v: v in self.DIRECTIONS)
+        
+        # Current state of mouth (effects ability to eat).
+        self.add_actuator('mouth', 'close', lambda v: v in ['open, close'])
 
-    """
-    TODO:
-    In order for the agent to gain access to all 
-    the actions specified in the assignment's 
-    requirements, it is essential to implement 
-    this method.
-    You can add a single action with the method:
-    self.add_action(action_name, action_function)
-    """
     def add_all_actions(self):
-        pass
-
-
-
-
+        """Add actions for the agent to change it's state """
+        # Change direction of head, max 90° in either direction.
+        for dir in self.DIRECTIONS:
+            self.add_action('move-%s' %dir, lambda: 
+                            {'head': dir} if dir != self.get_opp_dir()
+                            else {}
+            )
+        # Open/close mouth
+        self.add_action('open-mouth',  lambda: {'mouth': 'open'})
+        self.add_action('close-mouth', lambda: {'mouth': 'close'})
+    
+    def get_opp_dir(self):
+        """Return opposite of current direction (180°)."""
+        # get currently faced direction
+        cur_dir = self.read_actuator_value('head')
+        # get index of direction within DIRECTIONS list constant
+        cur_dir_index = self.DIRECTIONS.index(cur_dir)
+        # get opposite index, i.e. half way around the list
+        opp_dir_index = cur_dir_index + (len(self.DIRECTIONS) / 2)
+        opp_dir_index %= len(self.DIRECTIONS)
+        # Return value at the opposite index
+        return self.DIRECTIONS[opp_dir_index]

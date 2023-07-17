@@ -1,3 +1,9 @@
+""" 
+University of New England (UNE)
+T2 2023 - COSC550 Artificial Intelligence - Practical Assignment 1
+Kieran Hillier - Student ID: 220281036
+"""
+
 """
 You can import modules if you need
 NOTE:
@@ -10,6 +16,7 @@ the Python package une_ai
 
 # Here you can create additional functions
 # you may need to use in the agent program function
+from snake_agent import SnakeAgent
 
 """
 TODO:
@@ -24,4 +31,7 @@ agent program criterion.
 Please, do not change the parameters of this function.
 """
 def snake_agent_program(percepts, actuators):
-    pass
+    actions = []
+    
+    
+    return actions
