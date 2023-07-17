@@ -17,26 +17,29 @@ class SnakeAgent(Agent):
         """Add sensors for the agent to perceive the environment."""
         # list of x,y int tuples coordinates for each body segment. 
         # Head is first, Tail is last.
-        self.add_sensor('body-sensor', [(0,0)], lambda v: 
-                        isinstance(v,tuple) and 
+        self.add_sensor('body-sensor', [(0,0)], lambda v:
+                        isinstance(v,list) and 
                         len(v) > 0 and 
-                        isinstance(v[0],int) and 
-                        isinstance(v[1],int))
+                        isinstance(v[0],tuple) and
+                        isinstance(v[0][0],int) and 
+                        isinstance(v[0][1],int))
         
         # list of x,y,score int tuples coordinates and score for each food.
-        self.add_sensor('food-sensor', [(0,0,0)], lambda v: 
-                        isinstance(v,tuple) and 
+        self.add_sensor('food-sensor', [(0,0,0)], lambda v:
+                        isinstance(v,list) and 
                         len(v) > 0 and 
-                        isinstance(v[0],int) and 
-                        isinstance(v[1],int) and 
-                        isinstance(v[2],int))
+                        isinstance(v[0],tuple) and
+                        isinstance(v[0][0],int) and 
+                        isinstance(v[0][1],int) and 
+                        isinstance(v[0][2],int))
         
         # list of x,y int tuples coordinates for each obstacle.
-        self.add_sensor('obstacles-sensor', [(0,0)], lambda v: 
-                        isinstance(v,tuple) and 
+        self.add_sensor('obstacles-sensor', [(0,0)], lambda v:
+                        isinstance(v,list) and 
                         len(v) > 0 and 
-                        isinstance(v[0],int) and 
-                        isinstance(v[1],int))
+                        isinstance(v[0],tuple) and
+                        isinstance(v[0][0],int) and 
+                        isinstance(v[0][1],int))
         
         # Seconds remaining before the Game-Over state.
         self.add_sensor('clock', 0, lambda v: 
@@ -49,7 +52,7 @@ class SnakeAgent(Agent):
         self.add_actuator('head', 'up', lambda v: v in self.DIRECTIONS)
         
         # Current state of mouth (effects ability to eat).
-        self.add_actuator('mouth', 'close', lambda v: v in ['open, close'])
+        self.add_actuator('mouth', 'close', lambda v: v in ['open', 'close'])
 
     def add_all_actions(self):
         """Add actions for the agent to change it's state """
@@ -70,7 +73,7 @@ class SnakeAgent(Agent):
         # get index of direction within DIRECTIONS list constant
         cur_dir_index = self.DIRECTIONS.index(cur_dir)
         # get opposite index, i.e. half way around the list
-        opp_dir_index = cur_dir_index + (len(self.DIRECTIONS) / 2)
+        opp_dir_index = cur_dir_index + int((len(self.DIRECTIONS) / 2) )
         opp_dir_index %= len(self.DIRECTIONS)
         # Return value at the opposite index
         return self.DIRECTIONS[opp_dir_index]

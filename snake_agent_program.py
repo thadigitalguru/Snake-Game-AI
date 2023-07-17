@@ -16,7 +16,10 @@ the Python package une_ai
 
 # Here you can create additional functions
 # you may need to use in the agent program function
+import random
 from snake_agent import SnakeAgent
+
+DIRECTIONS = SnakeAgent.DIRECTIONS
 
 """
 TODO:
@@ -33,5 +36,8 @@ Please, do not change the parameters of this function.
 def snake_agent_program(percepts, actuators):
     actions = []
     
+    # Choose a new random direction
+    new_dir = random.choice(DIRECTIONS)
+    actions.append('move-{0}'.format(new_dir))
     
     return actions
