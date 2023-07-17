@@ -17,7 +17,6 @@ the Python package une_ai
 # Here you can create additional functions
 # you may need to use in the agent program function
 import random
-import logging
 from une_ai.assignments.snake_game import DISPLAY_WIDTH, DISPLAY_HEIGHT, TILE_SIZE
 from une_ai.models import GridMap
 from snake_agent import SnakeAgent
@@ -45,35 +44,64 @@ def next_tile(model, direction, body_pos, food_pos, obst_pos):
     except:
         value = 'wall'
     
-    # Check if next tile obstacle 
+    # Check if next tile is an obstacle 
     for p in obst_pos:
         if p[0] == new_x and p[1] == new_y:
             value = 'wall'
+            
+    # Check if next tile is food 
+    for f in food_pos:
+        if f[0] == new_x and f[1] == new_y:
+            value = 'food'
 
     return value
 
-def snake_agent_program(percepts, actuators):
-    actions = []
-    
+def get_opp_dir(dir):
+    """Return opposite of current direction (180°)."""
+    opp_dir_index = DIRECTIONS.index(dir) + len(DIRECTIONS) // 2
+    opp_dir_index %= len(DIRECTIONS)
+    return DIRECTIONS[opp_dir_index]
+
+def simple_reflex_behaviour(percepts, actuators, actions):
+    cur_dir = actuators['head']
     body_pos = percepts['body-sensor']
     food_pos = percepts['food-sensor']
     obst_pos = percepts['obstacles-sensor']
     
+    cur_dir = actuators['head']
     
+    valid_turns = DIRECTIONS.copy()
+    valid_turns.remove(get_opp_dir(cur_dir))
+    
+    new_dir = cur_dir
     while True:
-        new_dir = random.choice(DIRECTIONS)
         if next_tile(env_map, new_dir, body_pos, food_pos, obst_pos) != 'wall':
-            actions.append('move-%s' %new_dir)
             break
-        else:
-            print('WALL')
+        valid_turns.remove(new_dir)
+        if len(valid_turns) == 0:
+            break
+        new_dir = random.choice(valid_turns)
     
-    """
-    for dir in DIRECTIONS:
-        if next_tile(env_map, dir, body_pos, food_pos, obst_pos) == 'wall':
-            
+    food = False
+    for dir in valid_turns:
+        if next_tile(env_map, dir, body_pos, food_pos, obst_pos) == 'food':
+            new_dir = dir
+            food = True
             break
-    actions.append('move-%s' %dir)
-    """
+    
+    if food:
+        actions.append('open-mouth')
+    else:
+        actions.append('close-mouth')
+
+    if cur_dir != new_dir:
+        actions.append('move-%s' %new_dir)
+    
+    return actions
+
+def snake_agent_program(percepts, actuators):
+    actions = []
+    
+    actions = simple_reflex_behaviour(percepts, actuators, actions)
     
     return actions
