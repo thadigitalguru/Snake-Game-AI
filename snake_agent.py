@@ -4,11 +4,12 @@ T2 2023 - COSC550 Artificial Intelligence - Practical Assignment 1
 Kieran Hillier - Student ID: 220281036
 """
 
+import numpy
 from une_ai.models import Agent
 
 class SnakeAgent(Agent):
     
-    DIRECTIONS = ['up', 'left', 'down', 'right']
+    DIRECTIONS = ['up', 'right', 'down', 'left']
 
     def __init__(self, agent_program):
         super().__init__("Snake Agent", agent_program)
@@ -31,7 +32,8 @@ class SnakeAgent(Agent):
                         isinstance(v[0],tuple) and
                         isinstance(v[0][0],int) and 
                         isinstance(v[0][1],int) and 
-                        isinstance(v[0][2],int))
+                        (isinstance(v[0][2],int) or
+                        isinstance(v[0][2],numpy.int32)))
         
         # list of x,y int tuples coordinates for each obstacle.
         self.add_sensor('obstacles-sensor', [(0,0)], lambda v:
