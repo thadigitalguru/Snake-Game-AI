@@ -2,6 +2,7 @@
 COSC550 Artificial Intelligence (T2 2023) - Practical Assignment 1
 Kieran Hillier - Student ID: 220281036
 """
+
 import random
 import numpy as np
 from une_ai.assignments.snake_game import DISPLAY_WIDTH, DISPLAY_HEIGHT, TILE_SIZE
@@ -15,20 +16,16 @@ env_h = int(DISPLAY_HEIGHT/TILE_SIZE)
 env_map = GridMap(env_w, env_h, None)
 obstacles_initialised = False
 
-def initialise_obstacles(percepts):
+def initialise_obstacles(percepts, model):
     for i in percepts['obstacles-sensor']:
-        env_map.set_item_value(i[0], i[1], 'wall')
-    setup_map = True
+        model.set_item_value(i[0], i[1], 'wall')
 
-def update_map(percepts):
-    # Populate obstacles locations
-    if not obstacles_initialised:
-        initialise_obstacles(percepts)
-    
-    # Update food locations
-    for f in percepts['food-sensor']:
-        if env_map.get_item_value(f[0], f[1]) != 'food':
-            env_map.set_item_value(f[0], f[1], 'food')
+def update_food(percepts, model):    
+    # Check through current food...
+    for cur_f in percepts['food-sensor']:
+        # Add food to map if new
+        if model.get_item_value(cur_f[0], cur_f[1]) is None:
+            model.set_item_value(cur_f[0], cur_f[1], 'food-%s' %cur_f[2])
 
 def get_next_tile(model, direction, body_pos):
     offset = {
@@ -87,12 +84,16 @@ def calculate_utility(model, cur_pos, direction):
     # check if, and how far away food is in that direction
     max_dist = max(env_h, env_w)
     reward = max_dist
+    score = 0
     dist_penalty = 0
     # search from closest to furthest
     for tile in visible_tiles:
-        if tile == 'food':
-            # food found! Return calculate utility
-            return reward - dist_penalty
+        if tile != None and tile.startswith('food'):
+            # food found! Extract its score
+            _, score = tile.split('-')
+            score = int(score)
+            # Calculate and return utility value
+            return reward + score - dist_penalty
         # Nothing yet. Add to the distance penalty counter, continue
         dist_penalty += 1
     
@@ -101,50 +102,75 @@ def calculate_utility(model, cur_pos, direction):
 
 def snake_agent_program(percepts, actuators):
     
-    # Update game environment
-    update_map(percepts)
+    # Perceive environment...
     
-    # initiate variables
+    # Setup variables
     actions = []
     cur_dir = actuators['head']
     new_dir = cur_dir
     body_pos = percepts['body-sensor']
-    valid_turns = DIRECTIONS.copy()
-    valid_turns.remove(get_opp_dir(cur_dir))
+    valid_dirs = DIRECTIONS.copy()
+    valid_dirs.remove(get_opp_dir(cur_dir))
     next_tile = None
     max_utility = 0
     
-    # Reflexively avoid obstacle
+    # Add obstacles only once
+    if percepts['clock'] == 60:
+        initialise_obstacles(percepts, env_map)
+    
+    # Add any new food
+    update_food(percepts, env_map)
+    
+    # REFLEX: avoid obstacles
     while True:
+        # Check if next tile is safe (not a wall or body part)
         next_tile = get_next_tile(env_map, new_dir, body_pos)
         if next_tile[0] not in ['wall', 'body']:
+            # Safe
             break
-        print('%s %s' %(next_tile[0], new_dir))
-        valid_turns.remove(new_dir)
-        if len(valid_turns) == 0:
+        # Dangerous, avoid
+        print('%s is a %s' %(new_dir, next_tile[0]))
+        # Remove direction from list of valid choices
+        valid_dirs.remove(new_dir)
+        # Check if there are any remaining directions to try
+        if len(valid_dirs) == 0:
+            # Dead-end, all directions are dangerous. No more directions to try
             print('FAIL: No more valid turns to choose from!')
             break
-        new_dir = random.choice(valid_turns)
+        # More directions to try, pick one at random
+        new_dir = random.choice(valid_dirs)
     
-    # Utility maximise direction
-    print('before for loop: %s' %new_dir)
-    for dir in valid_turns:
+    # UTILITY: Choose the best direction
+    for dir in valid_dirs:
+        # Get the utility value for this direction
         cur_utility = calculate_utility(env_map, body_pos[0], dir)
-        print('%s utility is %d' %(dir, cur_utility))
+        # Record the highest scoring direction
         if cur_utility > max_utility:
+            if dir != new_dir:
+                print('%s(%d) is beter than %s(%d)' 
+                    %(dir, cur_utility, new_dir, max_utility))
             max_utility = cur_utility
             new_dir = dir
     
-    # Reflexively open/close mouth for food
+    # REFLEX: Open/close mouth for food
     next_tile = get_next_tile(env_map, new_dir, body_pos)
-    if next_tile[0] is 'food':
+    if next_tile[0] != None and next_tile[0].startswith('food'):
+        # Food! Open mouth
         actions.append('open-mouth')
+        # DEBUGGING: Print eaten food's score
+        map_tile = env_map.get_item_value(next_tile[1], next_tile[2])
+        _, score = map_tile.split('-')
+        print('food eaten! +%s points' %score)
+        # Remove food from map
         env_map.set_item_value(next_tile[1], next_tile[2], None)
+    # No food. Close mouth
     elif actuators['mouth'] == 'open':
         actions.append('close-mouth')
     
-    # Change direction if better found
+    # Move, if better direction
     if new_dir != cur_dir:
         actions.append('move-%s' %new_dir)
+        print('Moving %s' %new_dir)
     
+    # Finished thinking, act
     return actions
