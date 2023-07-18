@@ -50,7 +50,7 @@ class SnakeAgent(Agent):
             and isinstance(v[0][0],int) 
             and isinstance(v[0][1],int)
         )
-
+    
         # Seconds remaining before the Game-Over state.
         self.add_sensor(
             'clock', 
